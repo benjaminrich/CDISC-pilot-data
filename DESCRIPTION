@@ -1,0 +1,18 @@
+Package: CDISC
+Type: Package
+Version: 0.1
+Date: 2021-06-15
+Title: Collection of Functions for Reading and Manipulating CDISC Datasets
+Description: XXX
+Authors@R: person("Benjamin", "Rich", role=c("aut", "cre", "cph"), email="mail@benjaminrich.net")
+URL: https://github.com/benjaminrich/CDISC
+BugReports: https://github.com/benjaminrich/CDISC/issues
+License: GPL-3
+Depends: R (>= 3.5.0)
+Imports: stats,knitr,data.table,haven,SASxport,readxl,openxlsx
+Suggests: testthat,sas7bdat.parso
+VignetteBuilder: knitr
+LazyData: true
+Encoding: UTF-8
+RoxygenNote: 7.1.1
+
