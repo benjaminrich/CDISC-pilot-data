@@ -258,7 +258,7 @@ merge.supp <- function(base, supp, lowercase.names=TRUE) {
 #' @export
 read_sdtm <- function(domain, path=getOption("path.sdtm", "."), mergesupp=TRUE, extension="(sas7bdat|xpt)", verbose=TRUE) {
     file.base <- dir(path, pattern=paste0(domain, "\\.", extension), full.names=TRUE)[1]
-    file.supp <- dir(path, pattern=paste0("supp", domain, "\\.", extension, full.names=TRUE))[1]
+    file.supp <- dir(path, pattern=paste0("supp", domain, "\\.", extension), full.names=TRUE)[1]
     if (isTRUE(verbose) && file.exists(file.base)) {
         message(sprintf("Reading %s", file.base))
     }
@@ -429,7 +429,7 @@ generate_database_summary <- function(
     outfile   = paste0("cdisc_database_summary_", format(Sys.time(), "%Y%m%d%H%M%S"), ".html")
 ) {
 
-    temp <- tempfile("CDISC_explore_database", fileext=".R")
+    temp <- tempfile("cdisc_database_summary", fileext=".R")
     catf <- function(...) cat(..., file=temp, append=TRUE)
 
     catf('#\' ---
@@ -475,6 +475,8 @@ suppressPackageStartupMessages({
                 catf('\n')
                 catf(sprintf('for (v in grep("^.*test$|^param$", names(%s), value=T)) {\n', d))
                 catf('cat(sprintf("### %s\n\n", v))\n')
+                catf(sprintf('    x <- %s[[v]]\n', d))
+                catf('    attr(x, "label")  <- v\n')
                 catf(sprintf('    print(lumos(%s[[v]], .max=Inf, .pct=T, .order.by.freq=F))\n', d))
                 catf('}\n')
             }
