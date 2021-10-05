@@ -268,7 +268,10 @@ read_sdtm <- function(domain, path=getOption("path.sdtm", "."), mergesupp=TRUE, 
             message(sprintf("Found %s. Merging.", paste0("supp", domain)))
         }
         supp <- read_data(file.supp)
-        print(with(supp, showtable(qlabel, Inf)))
+        if (verbose) {
+            showtable <- function(x) knitr::kable(as.data.frame(table(droplevels(as.factor(x)))), row.names=F)
+            print(with(supp, showtable(qlabel)))
+        }
         merge.supp(base, supp)
     } else {
         base
