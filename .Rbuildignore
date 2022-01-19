@@ -1,0 +1,10 @@
+^\..*\.swp$
+^.*\.R\.tmp\.R$
+^_config.yml$
+^cran-comments\.md$
+^\.travis\.yml$
+^CRAN-RELEASE$
+^.*\.Rproj$
+^\.Rproj\.user$
+^data-raw$
+^LICENSE\.md$

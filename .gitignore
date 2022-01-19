@@ -1,0 +1,10 @@
+.Rhistory
+..Rcheck
+.*.swp
+*.bak
+*.tmp
+*.temp
+temp.*
+*.Rproj
+.Rproj.user
+CRAN-RELEASE

@@ -1,18 +1,23 @@
 Package: CDISC
 Type: Package
-Version: 0.1
-Date: 2021-06-15
-Title: Collection of Functions for Reading and Manipulating CDISC Datasets
-Description: XXX
-Authors@R: person("Benjamin", "Rich", role=c("aut", "cre", "cph"), email="mail@benjaminrich.net")
+Version: 0.2
+Date: 2022-01-19
+Title: Utilities for CDISC SDTM/ADaM Datasets
+Description: A collection of functions for reading and manipulating CDISC
+SDTM/ADaM datasets. Also, repackages the CDISC SDTM/ADaM Pilot Project Data in
+R format.
+Authors@R: c(
+  person("Benjamin", "Rich", role=c("aut", "cre"), email="mail@benjaminrich.net"),
+  person("CDISC", role="cph", comment="CDISC SDTM/ADaM Pilot Project Data ©CDISC 2008"))
 URL: https://github.com/benjaminrich/CDISC
 BugReports: https://github.com/benjaminrich/CDISC/issues
-License: GPL-3
+License: MIT + file LICENSE
 Depends: R (>= 3.5.0)
-Imports: stats,knitr,data.table,haven,SASxport,readxl,openxlsx
+Imports: stats,knitr,data.table,haven,SASxport,readxl,openxlsx,mappings
 Suggests: testthat,sas7bdat.parso
 VignetteBuilder: knitr
 LazyData: true
 Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1
 

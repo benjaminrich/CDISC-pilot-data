@@ -1,15 +1,15 @@
-#.onLoad <- function(libname, pkgname) {
-#    op <- list(
-#        path.stdm = NULL,
-#        path.adam = NULL
-#    )
-#    toset <- !(names(op) %in% names(options()))
-#    if (any(toset)) options(op[toset])
-#    invisible()
-#}
-
+#' Handle partial dates
+#'
+#' In CDISC datasets, dates can sometimes be incomplete due to missing
+#' information.
+#'
+#' @param x A character vector containing a representation of a vector of dates
+#' in `yyyy-mm-dd` format, some of which may be incomplete.
+#' @param impute Whether and how to impute the missing information (see Details).
+#'
+#' @return A [Date] object.
 #' @export
-partial.date <- function(x, impute=c("missing", "first", "mid")) {
+partial_date <- function(x, impute=c("missing", "first", "mid")) {
     impute <- match.arg(impute)
     x <- as.character(x)
     x <- gsub("-UNK$", "", x)
@@ -29,8 +29,13 @@ partial.date <- function(x, impute=c("missing", "first", "mid")) {
     as.Date(strptime(x, "%Y-%m-%d", tz="UTC"))
 }
 
+#' Convert ISO8601 date/time reprensentation to `POSIXct`
+#'
+#' @param x A character vector containing dates/times in their ISO8601 representation.
+#' @param impute Whether to impute missing time information.
+#' @return A [POSIXct] object.
 #' @export
-convert.dtc <- function(x, impute=FALSE) {
+convert_dtc <- function(x, impute=FALSE) {
     x <- as.character(x)
     if (impute) {
         i <- !is.na(x) & nchar(x) == 10
@@ -41,13 +46,18 @@ convert.dtc <- function(x, impute=FALSE) {
     as.POSIXct(strptime(x, "%Y-%m-%dT%H:%M:%S", tz="UTC"))
 }
 
+#' Format a date/time object as its ISO8601 reprensentation
+#'
+#' @param x A date/time object (i.e., an object which can be converted to [POSIXlt]).
+#' @return x A character vector containing the ISO8601 representation of `x`.
+#' @seealso [strftime]
 #' @export
-format.dtc <- function(x) {
+format_dtc <- function(x) {
     strftime(x, format="%Y-%m-%dT%H:%M", tz=attr(x, "tzone"))
 }
 
 #' @export
-convert.date.and.time <- function(date, time) {
+convert_date_and_time <- function(date, time) {
     date <- as.character(date)
     i <- grepl("/", date)
     temp1 <- as.POSIXct(strptime(paste(date[i], time[i]), "%m/%d/%Y %H:%M", tz="UTC"))
@@ -59,7 +69,7 @@ convert.date.and.time <- function(date, time) {
 }
 
 #' @export
-convert.secs <- function(x) {
+convert_secs <- function(x) {
     if (is.factor(x)) {
         x <- as.character(x)
     }
@@ -76,30 +86,38 @@ convert.secs <- function(x) {
 }
 
 #' @export
-read_data <- function(file, path=NULL, ..., lc=TRUE, dt=TRUE) {
+read_data <- function(file, path=NULL, ..., .lc=TRUE, .dt=TRUE) {
+
     if (!is.null(path)) {
         file <- file.path(path, file)
     }
+
     if (!file.exists(file)) {
         stop(sprintf("File does not exist: %s", file))
     }
+
     if (grepl("\\.xpt$|\\.sas7bdat$", file)) {
         x <- read_data_sas(file=file, path=path, ...)
     } else if (grepl("\\.xls$|\\.xlsx$", file)) {
         x <- read_data_excel(file=file, path=path, ...)
     } else if (grepl("\\.csv$", file)) {
-        if (dt) {
+        if (.dt) {
             x <- data.table::fread(file, ...)
         } else {
             x <- read.csv(file, ...)
         }
+    } else {
+        stop("Unsupported filetype")
     }
-    if (dt) {
+
+    if (.dt) {
         x <- data.table::as.data.table(x)
     }
-    if (lc) {
+
+    if (.lc) {
         names(x) <- tolower(names(x))
     }
+
     x
 }
 
@@ -163,7 +181,7 @@ read_data_sas <- function(file, path=NULL, ...) {
 }
 
 #' @export
-read_excel <- function(file, path=NULL, ...) {
+read_data_excel <- function(file, path=NULL, ...) {
     if (!is.null(path)) {
         file <- file.path(path, file)
     }
@@ -208,7 +226,7 @@ read_excel <- function(file, path=NULL, ...) {
 }
 
 #' @export
-merge.supp <- function(base, supp, lowercase.names=TRUE) {
+merge_supp <- function(base, supp, lowercase.names=TRUE) {
     if (is.null(supp) || nrow(supp) == 0) {
         return(base)
     }
@@ -216,7 +234,7 @@ merge.supp <- function(base, supp, lowercase.names=TRUE) {
     names(base) <- tolower(names(base))
     names(supp) <- tolower(names(supp))
     ul <- unique(supp[, c("idvar", "qnam", "qlabel")])
-    label.mapping <- mapping(ul$qnam, ul$qlabel)
+    label.mapping <- mappings::mapping(ul$qnam, ul$qlabel)
     for (j in 1:nrow(ul)) {
         idvar <- ul$idvar[j]
         qnam <- ul$qnam[j]
@@ -257,8 +275,8 @@ merge.supp <- function(base, supp, lowercase.names=TRUE) {
 
 #' @export
 read_sdtm <- function(domain, path=getOption("path.sdtm", "."), mergesupp=TRUE, extension="(sas7bdat|xpt)", verbose=TRUE) {
-    file.base <- dir(path, pattern=paste0(domain, "\\.", extension), full.names=TRUE)[1]
-    file.supp <- dir(path, pattern=paste0("supp", domain, "\\.", extension), full.names=TRUE)[1]
+    file.base <- dir(path, pattern=paste0("^", domain, "\\.", extension), full.names=TRUE)[1]
+    file.supp <- dir(path, pattern=paste0("^supp", domain, "\\.", extension), full.names=TRUE)[1]
     if (isTRUE(verbose) && file.exists(file.base)) {
         message(sprintf("Reading %s", file.base))
     }
@@ -272,7 +290,7 @@ read_sdtm <- function(domain, path=getOption("path.sdtm", "."), mergesupp=TRUE, 
             showtable <- function(x) knitr::kable(as.data.frame(table(droplevels(as.factor(x)))), row.names=F)
             print(with(supp, showtable(qlabel)))
         }
-        merge.supp(base, supp)
+        merge_supp(base, supp)
     } else {
         base
     }
@@ -369,7 +387,7 @@ safe_rbind <- function(..., .prefer=c("factor", "character", "error")) {
 }
 
 #' @export
-read.from.path <- function(path, read.fun=read.csv, lcnames=T, verbose=T) {
+read_from_path <- function(path, read.fun=read_data, lcnames=T, verbose=T) {
     if (verbose) {
         message(paste0("Reading from: ", path), "\n")
         message(paste0("Contents: "), "\n")
@@ -427,7 +445,7 @@ excludeNA <- function(x) {
 
 #' @export
 generate_database_summary <- function(
-    path.sdtm = getOption("path.stdm", NULL),
+    path.sdtm = getOption("path.sdtm", NULL),
     path.adam = getOption("path.adam", NULL),
     outfile   = paste0("cdisc_database_summary_", format(Sys.time(), "%Y%m%d%H%M%S"), ".html")
 ) {
