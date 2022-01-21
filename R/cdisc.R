@@ -56,6 +56,15 @@ format_dtc <- function(x) {
     strftime(x, format="%Y-%m-%dT%H:%M", tz=attr(x, "tzone"))
 }
 
+#' Convert a date and time to `POSIXct`
+#'
+#' @param date A character vector containing dates in either 'yyyy-mm-dd' or
+#' 'mm/dd/yyyy' (note: US convension, with the month first) format.
+#' @param time A character vector containing times in 24h format 'HH:MM' (note:
+#' no seconds).
+#' @return A [POSIXct] object.
+#' @examples
+#' convert_date_and_time(c("2022-01-21", "01/21/2022"), c("21:14", "9:14"))
 #' @export
 convert_date_and_time <- function(date, time) {
     date <- as.character(date)
@@ -68,6 +77,12 @@ convert_date_and_time <- function(date, time) {
     res
 }
 
+#' Convert time in seconds since midnight to hours and minutes
+#'
+#' @param x A vector containing time in seconds since midnight.
+#' @return A character vector containing times in 24h format 'HH:MM' (note: no seconds).
+#' @examples
+#' convert_secs(1024)
 #' @export
 convert_secs <- function(x) {
     if (is.factor(x)) {
@@ -85,8 +100,20 @@ convert_secs <- function(x) {
     format(x, "%H:%M")
 }
 
+#' Helper function to read data from files
+#'
+#' @param x A file name.
+#' @param path Optionally, a path in which to look for `file`.
+#' @param ... Further arguments passed to the function that does the actual reading.
+#' @param .fun A function that reads a file passed as its first argument. The
+#' default is to use an appropriate function depending on the file extension.
+#' @param .lc If `TRUE`, then convert all names to lower case in the returned object.
+#' @param .dt If `TRUE`, then then returned a `data.table`.
+#' @return If `.dt` is `TRUE`, then a `data.table` is returned. Otherwise, a
+#' `data.frame` is returned unless `.fun` is specified, in which case that
+#' function determines the return type.
 #' @export
-read_data <- function(file, path=NULL, ..., .lc=TRUE, .dt=TRUE) {
+read_data <- function(file, path=NULL, ..., .fun=NULL, .lc=TRUE, .dt=TRUE) {
 
     if (!is.null(path)) {
         file <- file.path(path, file)
@@ -96,10 +123,12 @@ read_data <- function(file, path=NULL, ..., .lc=TRUE, .dt=TRUE) {
         stop(sprintf("File does not exist: %s", file))
     }
 
-    if (grepl("\\.xpt$|\\.sas7bdat$", file)) {
-        x <- read_data_sas(file=file, path=path, ...)
+    if (!is.null(.fun)) {
+        x <- .fun(file, ...)
+    } else if (grepl("\\.xpt$|\\.sas7bdat$", file)) {
+        x <- read_data_sas(file=file, ...)
     } else if (grepl("\\.xls$|\\.xlsx$", file)) {
-        x <- read_data_excel(file=file, path=path, ...)
+        x <- read_data_excel(file=file, ...)
     } else if (grepl("\\.csv$", file)) {
         if (.dt) {
             x <- data.table::fread(file, ...)
@@ -121,6 +150,13 @@ read_data <- function(file, path=NULL, ..., .lc=TRUE, .dt=TRUE) {
     x
 }
 
+#' Helper function to read data from SAS files
+#'
+#' @param x A file name.
+#' @param path Optionally, a path in which to look for `file`.
+#' @param ... Further arguments passed to the function that does the actual reading.
+#' @return A `data.frame`.
+#' @export
 read_data_sas <- function(file, path=NULL, ...) {
     if (!is.null(path)) {
         file <- file.path(path, file)
@@ -129,10 +165,9 @@ read_data_sas <- function(file, path=NULL, ...) {
         stop(sprintf("File does not exist: %s", file))
     }
     if (grepl("\\.xpt$", file)) {
-        x <- tryCatch(
-            #SASxport::read.xport(file, names.tolower=TRUE),
-            SASxport::read.xport(file, ...),
-                error=function(e) e)
+        x <- tryCatch({
+                SASxport::read.xport(file, ...)
+        }, error=function(e) e)
         if (inherits(x, "error")) {
             # Give up
             stop(sprintf("Unable to read sas dataset: %s", x$message))
@@ -180,6 +215,12 @@ read_data_sas <- function(file, path=NULL, ...) {
     x
 }
 
+#' Helper function to read data from Excel files
+#'
+#' @param x A file name.
+#' @param path Optionally, a path in which to look for `file`.
+#' @param ... Further arguments passed to the function that does the actual reading.
+#' @return A `data.frame`.
 #' @export
 read_data_excel <- function(file, path=NULL, ...) {
     if (!is.null(path)) {
@@ -225,8 +266,14 @@ read_data_excel <- function(file, path=NULL, ...) {
     x
 }
 
+#' Merge SDTM "supp" data
+#'
+#' @param base A `data.frame` containing the "base" data (e.g. vc, lb, pc, ...).
+#' @param supp A `data.frame` containing the "supp" data (e.g. suppvc, supplb, supppc, ...).
+#' @param .lc If `TRUE`, then convert all new column names added to `base` to lower case.
+#' @return A `data.frame`.
 #' @export
-merge_supp <- function(base, supp, lowercase.names=TRUE) {
+merge_supp <- function(base, supp, .lc=TRUE) {
     if (is.null(supp) || nrow(supp) == 0) {
         return(base)
     }
@@ -238,7 +285,7 @@ merge_supp <- function(base, supp, lowercase.names=TRUE) {
     for (j in 1:nrow(ul)) {
         idvar <- ul$idvar[j]
         qnam <- ul$qnam[j]
-        if (lowercase.names) {
+        if (.lc) {
             newv <- tolower(qnam)
         } else {
             newv <- qnam
@@ -273,8 +320,16 @@ merge_supp <- function(base, supp, lowercase.names=TRUE) {
     base
 }
 
+#' Read SDTM data
+#'
+#' @param domain An SDTM "domain" (usually 2 letters, such as "dm" or "vs").
+#' @param path A path in which to search for SDTM files.
+#' @param extension File extension(s) to search for (can be a regular expression).
+#' @param mergesupp If `TRUE` (the default), search for and merge an associated "supp" file.
+#' @param verbose If `TRUE` (the default), output informative messages.
+#' @return A `data.frame`.
 #' @export
-read_sdtm <- function(domain, path=getOption("path.sdtm", "."), mergesupp=TRUE, extension="(sas7bdat|xpt)", verbose=TRUE) {
+read_sdtm <- function(domain, path=getOption("path.sdtm", "."), extension="(sas7bdat|xpt)", mergesupp=TRUE, verbose=TRUE) {
     file.base <- dir(path, pattern=paste0("^", domain, "\\.", extension), full.names=TRUE)[1]
     file.supp <- dir(path, pattern=paste0("^supp", domain, "\\.", extension), full.names=TRUE)[1]
     if (isTRUE(verbose) && file.exists(file.base)) {
@@ -296,11 +351,25 @@ read_sdtm <- function(domain, path=getOption("path.sdtm", "."), mergesupp=TRUE, 
     }
 }
 
+#' Read ADaM data
+#'
+#' @param domain An ADaM "domain" (usually 4 letters starting with "ad", such as "adsl" or "adae").
+#' @param path A path in which to search for ADaM files.
+#' @param extension File extension(s) to search for (can be a regular expression).
+#' @param verbose If `TRUE` (the default), output informative messages.
+#' @return A `data.frame`.
 #' @export
 read_adam <- function(domain, path=getOption("path.adam", "."), extension="(sas7bdat|xpt)", verbose=TRUE) {
     read_sdtm(domain=domain, path=path, extension=extension, verbose=verbose, mergesupp=FALSE)
 }
 
+#' Safely bind rows
+#'
+#' @param ... Objects (typically `data.frame`s) that contain rows to bind.
+#' @param .prefer What to do when column types don't match (such as when the
+#' same column is numeric in one `data.frame` and textual in another).
+#' @return A `data.frame`.
+#' @seealso [rbind]
 #' @export
 safe_rbind <- function(..., .prefer=c("factor", "character", "error")) {
     .prefer <- match.arg(.prefer)
@@ -386,69 +455,120 @@ safe_rbind <- function(..., .prefer=c("factor", "character", "error")) {
     l3
 }
 
-#' @export
-read_from_path <- function(path, read.fun=read_data, lcnames=T, verbose=T) {
-    if (verbose) {
-        message(paste0("Reading from: ", path), "\n")
-        message(paste0("Contents: "), "\n")
-        message(dir(path), "\n")
-    }
-    function(file, ..., path=path, read.fun=read.fun, lcnames=lcnames, verbose=verbose) {
-        fixnames <- function(x) {
-            if (lcnames) {
-                if (verbose) {
-                    message("Setting names to lowercase")
-                }
-                setNames(x, tolower(names(x)))
-            } else {
-                x
-            }
-        }
-        fixnames(read.fun(file.path(path, file), ...))
-    }
-}
+# read_from_path <- function(path, read.fun=read_data, lcnames=T, verbose=T) {
+#     if (verbose) {
+#         message(paste0("Reading from: ", path), "\n")
+#         message(paste0("Contents: "), "\n")
+#         message(dir(path), "\n")
+#     }
+#     function(file, ..., path=path, read.fun=read.fun, lcnames=lcnames, verbose=verbose) {
+#         fixnames <- function(x) {
+#             if (lcnames) {
+#                 if (verbose) {
+#                     message("Setting names to lowercase")
+#                 }
+#                 setNames(x, tolower(names(x)))
+#             } else {
+#                 x
+#             }
+#         }
+#         fixnames(read.fun(file.path(path, file), ...))
+#     }
+# }
 
+#' Check for the value "Y", ignoring `NA`
+#' @param x A vector of type `character` or `factor`.
+#' @return A vector of type `logical`.
 #' @export
 isY <- function(x) {
     !is.na(x) & x == "Y"
 }
 
+#' Check for the value "N", ignoring `NA`
+#' @param x A vector of type `character` or `factor`.
+#' @return A vector of type `logical`.
 #' @export
 isN <- function(x) {
     !is.na(x) & x == "N"
 }
 
+#' Check for the value "0" (string or numeric), ignoring `NA`
+#' @param x A vector of type `numeric`, `character` or `factor`.
+#' @return A vector of type `logical`.
 #' @export
 is0 <- function(x) {
     !is.na(x) & as.character(x) == "0"
 }
 
+#' Check for the value "1" (string or numeric), ignoring `NA`
+#' @param x A vector of type `numeric`, `character` or `factor`.
+#' @return A vector of type `logical`.
 #' @export
 is1 <- function(x) {
     !is.na(x) & as.character(x) == "1"
 }
 
+#' Check for the value "NOT DONE", ignoring `NA`
+#' @param x A vector of type `character` or `factor`.
+#' @return A vector of type `logical`.
 #' @export
 isND <- function(x) {
     !is.na(x) & x == "NOT DONE"
 }
 
+#' Shorthand Shorthand for `is.na(x) | x`.
+#'
+#' @param x A vector of type `logical`.
+#' @return A vector of type `logical`.
 #' @export
 includeNA <- function(x) {
     is.na(x) | x
 }
 
+#' Shorthand Shorthand for `!is.na(x) & x`.
+#'
+#' @param x A vector of type `logical`.
+#' @return A vector of type `logical`.
 #' @export
 excludeNA <- function(x) {
     !is.na(x) & x
 }
 
+#' Generate a database summary
+#'
+#' Using R markdown, generate and HTML file containing a summary of the
+#' contents of a clinical study database (STDM and ADaM), similar to a data
+#' specification.  This is useful to search for specific information in the
+#' absense of a true data specification.
+#'
+#' @param path.sdtm The path to the STDM files.
+#' @param path.adam The path to the ADaM files.
+#' @param outfile The name of the output file to generate.
+#' @return Called for its side effects (returns `NULL`).
+#' @examples
+#' options(
+#'     path.sdtm = system.file("cdiscpilot01/sdtm", package="CDISC"),
+#'     path.adam = system.file("cdiscpilot01/adam", package="CDISC"))
+#'
+#' temp <- tempfile("demo_cdisc_database_summary", fileext=".html")
+#' generate_database_summary(outfile=temp)
+#' browseURL(temp)
+#' unlink(temp)
+#' \donttest{
+#' }
 #' @export
 generate_database_summary <- function(
     path.sdtm = getOption("path.sdtm", NULL),
     path.adam = getOption("path.adam", NULL),
     outfile   = paste0("cdisc_database_summary_", format(Sys.time(), "%Y%m%d%H%M%S"), ".html")
 ) {
+    if (!requireNamespace("rmarkdown", quietly = TRUE)) {
+        stop("Requires package `rmarkdown`. Please install it.", call.=F)
+    }
+
+    if (!requireNamespace("lumos", quietly = TRUE)) {
+        stop("Requires package `lumos`. Please install it.", call.=F)
+    }
 
     temp <- tempfile("cdisc_database_summary", fileext=".R")
     catf <- function(...) cat(..., file=temp, append=TRUE)
@@ -481,13 +601,14 @@ suppressPackageStartupMessages({
 
     if (!is.null(path.sdtm)) {
 
-        files <- dir(path.sdtm)
+        files <- dir(path.sdtm, pattern="\\.(sas7bdat|xpt)")
         if (length(files) > 0) {
 
             catf('#+ SDTM\n\n')
             catf('#\' # SDTM\n\n')
 
             domains <- sub("\\..*$", "", files)
+            domains <- domains[!grepl("^supp", domains)] # Exclude supp
             for (d in domains) {
                 catf(sprintf('#+ %s\n\n', d))
                 catf(sprintf('#\' ## %s\n\n', d))
@@ -509,7 +630,7 @@ suppressPackageStartupMessages({
 
     if (!is.null(path.adam)) {
 
-        files <- dir(path.adam)
+        files <- dir(path.adam, pattern="\\.(sas7bdat|xpt)")
         if (length(files) > 0) {
 
             catf('#+ ADaM\n\n')
@@ -530,7 +651,9 @@ suppressPackageStartupMessages({
         }
     }
 
-    rmarkdown::render(temp, knit_root_dir=getwd(), output_file=outfile, output_dir=getwd())
+    rmarkdown::render(temp, knit_root_dir=getwd(), output_file=outfile, quiet=TRUE)
     unlink(temp)
+
+    invisible(NULL)
 }
 
