@@ -546,15 +546,15 @@ excludeNA <- function(x) {
 #' @param outfile The name of the output file to generate.
 #' @return Called for its side effects (returns `NULL`).
 #' @examples
-#' options(
-#'     path.sdtm = system.file("cdiscpilot01/sdtm", package="CDISC"),
-#'     path.adam = system.file("cdiscpilot01/adam", package="CDISC"))
+#' \dontrun{
+#' #options(
+#' #    path.sdtm = system.file("cdiscpilot01/sdtm", package="CDISC"),
+#' #    path.adam = system.file("cdiscpilot01/adam", package="CDISC"))
 #'
 #' temp <- tempfile("demo_cdisc_database_summary", fileext=".html")
 #' generate_database_summary(outfile=temp)
 #' browseURL(temp)
 #' unlink(temp)
-#' \donttest{
 #' }
 #' @export
 generate_database_summary <- function(

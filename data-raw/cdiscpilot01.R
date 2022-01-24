@@ -1,12 +1,11 @@
 # Get it here:
-#   https://bitbucket.cdisc.org/projects/CED/repos/sdtm-adam-pilot-project/browse/updated-pilot-submission-package/900172/m5/datasets/cdiscpilot01
-
+#   https://github.com/cdisc-org/sdtm-adam-pilot-project/tree/master/updated-pilot-submission-package/900172/m5/datasets/cdiscpilot01
 
 devtools::load_all()  # Load the package functions
 
 # SDTM
 
-options(path.sdtm="../inst/cdiscpilot01/sdtm")
+options(path.sdtm="./cdiscpilot01/sdtm")
 
 ae <- read_sdtm("ae")
 cm <- read_sdtm("cm")
@@ -30,7 +29,7 @@ relrec <- read_sdtm("relrec")
 
 # ADaM
 
-options(path.adam="../inst/cdiscpilot01/adam")
+options(path.adam="./cdiscpilot01/adam")
 
 adae     <- read_adam("adae"    )
 adlbc    <- read_adam("adlbc"   )
