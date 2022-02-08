@@ -651,7 +651,7 @@ suppressPackageStartupMessages({
         }
     }
 
-    rmarkdown::render(temp, knit_root_dir=getwd(), output_file=outfile, quiet=TRUE)
+    rmarkdown::render(temp, knit_root_dir=getwd(), output_file=outfile, output_dir=getwd(), quiet=TRUE)
     unlink(temp)
 
     invisible(NULL)
