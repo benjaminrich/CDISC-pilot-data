@@ -615,7 +615,7 @@ suppressPackageStartupMessages({
                 catf(sprintf('%s <- read_sdtm("%s", path="%s", verbose=F)\n', d, d, path.sdtm))
                 catf(sprintf('lumos(%s)\n\n', d))
                 catf('\n')
-                catf(sprintf('for (v in grep("^.*test$|^param$", names(%s), value=T)) {\n', d))
+                catf(sprintf('for (v in grep("^.*test$|^.*term$|^.*decod$|^param$", names(%s), value=T)) {\n', d))
                 catf('cat(sprintf("### %s\n\n", v))\n')
                 catf(sprintf('    x <- %s[[v]]\n', d))
                 catf('    attr(x, "label")  <- v\n')
