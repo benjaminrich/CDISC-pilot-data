@@ -44,7 +44,7 @@ advs     <- read_adam("advs"    )
 
 cdiscpilot01 <- list(
 
-    sdtm <- list(
+    sdtm = list(
         ae = ae,
         cm = cm,
         dm = dm,
@@ -63,7 +63,7 @@ cdiscpilot01 <- list(
         tv = tv,
         vs = vs),
 
-    adam <- list(
+    adam = list(
         adae     = adae,
         adlbc    = adlbc,
         adlbh    = adlbh,
