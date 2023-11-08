@@ -8,3 +8,7 @@
 ^\.Rproj\.user$
 ^data-raw$
 ^LICENSE\.md$
+
+^data$
+^cdiscpilot01.R$
+

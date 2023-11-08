@@ -13,7 +13,7 @@ Authors@R: c(
 URL: https://github.com/benjaminrich/CDISC
 BugReports: https://github.com/benjaminrich/CDISC/issues
 License: MIT + file LICENSE
-Depends: R (>= 3.5.0)
+Depends: R (>= 4.0.0)
 Imports: stats,knitr,data.table,haven,SASxport,readxl,openxlsx,mappings
 Suggests: testthat,sas7bdat.parso,rmarkdown,lumos
 VignetteBuilder: knitr
