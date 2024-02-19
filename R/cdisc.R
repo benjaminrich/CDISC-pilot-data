@@ -8,8 +8,17 @@
 #' @param impute Whether and how to impute the missing information (see Details).
 #'
 #' @return A [Date] object.
+#' @examples
+#' dates <- c("2022-03-21", "2022-03", "2022-03-UNK", "2022", "2022-UNK-UNK")
+#' partial_date(dates)
+#' partial_date(dates, impute="first")
+#' partial_date(dates, impute="mid")
+#' partial_date(dates, impute="last")
+#'
+#' dates <- sprintf("2024-%02d", 1:12)  # Handles leap years correctly
+#' partial_date(dates, impute="last")
 #' @export
-partial_date <- function(x, impute=c("missing", "first", "mid")) {
+partial_date <- function(x, impute=c("missing", "first", "mid", "last")) {
     impute <- match.arg(impute)
     x <- as.character(x)
     x <- gsub("-UNK$", "", x)
@@ -17,14 +26,22 @@ partial_date <- function(x, impute=c("missing", "first", "mid")) {
     i <- grepl("^\\d\\d\\d\\d$", x)   # Year only
     x[i] <- paste0(x[i],
         switch(impute,
-            mid   = "-06-01",
             first = "-01-01",
+            mid   = "-06-01",
+            last  = "-12-31",
             ""))
     i <- grepl("^\\d\\d\\d\\d-\\d\\d$", x)   # Year-month
+    last.day.of.month <- function(y) {
+        month <- (as.numeric(substring(y, 6, 7)) %% 12) + 1 
+        year  <- (as.numeric(substring(y, 1, 4)) + 1*(month==1))
+        day   <- 1
+        substring(as.character(as.Date(sprintf("%04d-%02d-%02d", year, month, day)) - 1), 9, 10)
+    }
     x[i] <- paste0(x[i],
         switch(impute,
-            mid   = "-15",
             first = "-01",
+            mid   = "-15",
+            last  = paste0("-", last.day.of.month(x[i])),
             ""))
     as.Date(strptime(x, "%Y-%m-%d", tz="UTC"))
 }
