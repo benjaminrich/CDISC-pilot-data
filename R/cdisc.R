@@ -493,6 +493,70 @@ safe_rbind <- function(..., .prefer=c("factor", "character", "error")) {
 #     }
 # }
 
+
+#' Character vector without quotation marks
+#'
+#' Inspired by Perl's `qw/string/`. Also similar to the `Cs()` and `.q()`
+#' functions from the `Hmisc` package.
+#' @param Any number of arguments, that will be returned as strings (i.e., quoted)
+#' @examples
+#' qw(a, b, c)
+#'
+qw <- function(...) {
+    args <- substitute(list(...))
+    sapply(as.list(args)[-1], deparse1)
+}
+
+#' Prune away columns that don't contain any non-missing values
+#' @param x A `data.frame`
+#' @return A `data.frame`.
+#' @export
+#' @examples
+#' x <- data.frame(a=1:10, b=NA, c=c(NA, 1:9))
+#' prune(x)
+prune <- function(x) {
+    x[, sapply(x, function(y) !all(is.na(y)))]
+
+}
+
+#' @export
+canonical <- function(x, ..., uid=NULL, domain=NULL) {
+
+    d1 <- deparse1(substitute(x))
+
+    x <- as.data.frame(x)
+
+    if (is.null(domain)) {
+        if (is.null(x$domain)) {
+            domain <- d1
+        } else {
+            domain <- unique(x$domain)
+        }
+    }
+
+    if (!is.null(domain)) {
+        if (length(domain) > 1) {
+            warning("domain is not unique")
+        }
+        names(x) <- gsub(paste0("^", domain), "", names(x), ignore.case=TRUE)
+    }
+
+    if (grepl("^usubjid$", names(x), ignore.case=TRUE)) {
+        i <- which(grepl("^usubjid$", names(x), ignore.case=TRUE))
+        if (!is.null(uid)) {
+            x <- x[ x[[i]] %in% uid ]
+        } else {
+            uid <- unique(x[[i]])
+        }
+        a <- attr(x[[i]], "label", exact=TRUE)
+        x[[i]] <- factor(x[[i]], levels=uid)
+        attr(x[[i]], "label") <- a
+        x <- x[order(x[[i]]),]
+    }
+
+    prune(x)
+}
+
 #' Check for the value "Y", ignoring `NA`
 #' @param x A vector of type `character` or `factor`.
 #' @return A vector of type `logical`.
@@ -532,6 +596,22 @@ is1 <- function(x) {
 isND <- function(x) {
     !is.na(x) & x == "NOT DONE"
 }
+
+#' @rdname isND
+#' @export
+isNOTDONE <- isND
+
+#' Check for the value "SCREEN FAILURE", ignoring `NA`
+#' @param x A vector of type `character` or `factor`.
+#' @return A vector of type `logical`.
+#' @export
+isSF <- function(x) {
+    !is.na(x) & x == "SCREEN FAILURE"
+}
+
+#' @rdname isSF
+#' @export
+isSCREENFAILURE <- isSF
 
 #' Shorthand Shorthand for `is.na(x) | x`.
 #'
